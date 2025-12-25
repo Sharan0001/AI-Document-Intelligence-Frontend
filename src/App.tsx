@@ -8,6 +8,8 @@ import ExplainabilityPanel from "./components/ExplainabilityPanel";
 import DocumentsList from "./components/DocumentsList";
 import MetricsDashboard from "./components/MetricsDashboard";
 import ErrorAnalysisPanel from "./components/ErrorAnalysisPanel";
+import { API_BASE_URL } from "../config";
+
 
 import "./app.css";
 
@@ -18,7 +20,7 @@ function App() {
   async function handleSelectDocument(docId: number) {
     setLoadingDoc(true);
     try {
-      const res = await fetch(`http://localhost:8000/documents/${docId}`);
+      const res = await fetch(`${API_BASE_URL}/documents/${docId}`);
       if (!res.ok) throw new Error("Failed to load document");
       const data = await res.json();
       setResult(data);
