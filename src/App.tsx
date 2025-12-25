@@ -8,7 +8,7 @@ import ExplainabilityPanel from "./components/ExplainabilityPanel";
 import DocumentsList from "./components/DocumentsList";
 import MetricsDashboard from "./components/MetricsDashboard";
 import ErrorAnalysisPanel from "./components/ErrorAnalysisPanel";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL } from "./config";
 
 
 import "./app.css";
