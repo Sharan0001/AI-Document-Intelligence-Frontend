@@ -11,6 +11,9 @@ export default function DocumentsList({ onSelect }) {
     to_date: "",
   });
   const [loadedOnce, setLoadedOnce] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState(null);
 
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
@@ -18,17 +21,35 @@ export default function DocumentsList({ onSelect }) {
     fetchDocuments();
   }, []);
 
-  async function fetchDocuments() {
+  async function fetchDocuments(attempt = 0) {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => {
       if (v) params.append(k, v);
     });
 
-    const res = await fetch(`${API_BASE_URL}/documents?${params.toString()}`);
-    const data = await res.json();
-    setDocs(data);
-    setLoadedOnce(true);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/documents?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setDocs(data);
+      setLoadedOnce(true);
+      setRetryCount(0);
+    } catch (err) {
+      if (attempt < 3) {
+        setRetryCount(attempt + 1);
+        await new Promise((r) => setTimeout(r, Math.pow(2, attempt + 1) * 1000));
+        return fetchDocuments(attempt + 1);
+      }
+      setError("Could not connect to server. Please try again later.");
+      setLoadedOnce(true);
+    } finally {
+      setLoading(false);
+    }
   }
+
 
   function setSeverityPreset(level) {
     const next = { ...filters, severity: level };
@@ -159,8 +180,31 @@ export default function DocumentsList({ onSelect }) {
         </button>
       </div>
 
+      {/* LOADING / RETRY / ERROR STATES */}
+      {loading && (
+        <div className="loading-state" style={{ padding: "20px", textAlign: "center", color: "#9ca3af" }}>
+          {retryCount > 0 ? (
+            <p>⏳ Backend is starting up... (attempt {retryCount}/3)</p>
+          ) : (
+            <p>Loading documents...</p>
+          )}
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="error-state" style={{ padding: "20px", textAlign: "center", color: "#ef4444" }}>
+          <p>{error}</p>
+          <button
+            onClick={() => fetchDocuments()}
+            style={{ marginTop: "10px", padding: "8px 16px", cursor: "pointer" }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* EMPTY STATES */}
-      {loadedOnce && docs.length === 0 && (
+      {loadedOnce && docs.length === 0 && !loading && !error && (
         <div className="empty-state">
           {!hasActiveFilters ? (
             <>
